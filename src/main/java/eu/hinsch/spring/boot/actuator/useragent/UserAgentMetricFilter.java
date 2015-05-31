@@ -29,9 +29,14 @@ public class UserAgentMetricFilter implements Filter {
             HttpServletRequest httpServletRequest = (HttpServletRequest) request;
 
             ReadableUserAgent userAgent = UADetectorServiceFactory.getResourceModuleParser().parse(httpServletRequest.getHeader("User-Agent"));
-            String key = userAgent.getName() + "." + userAgent.getVersionNumber().getMajor();
+            String name = userAgent.getName();
+            String key = escape(name) + "." + userAgent.getVersionNumber().getMajor();
             counterService.increment(key);
         }
+    }
+
+    private String escape(String name) {
+        return name.replace(" ", "-").toLowerCase();
     }
 
     @Override
