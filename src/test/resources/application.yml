@@ -1,0 +1,6 @@
+user-agent-metric:
+  keys:
+    - '#this.name'
+    - '#this.name + "." + #this.versionNumber.major'
+    - '#this.operatingSystem.name'
+    - '@currentRequest.remoteAddr'

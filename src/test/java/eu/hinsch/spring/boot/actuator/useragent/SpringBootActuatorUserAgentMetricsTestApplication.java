@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
 @RestController
-public class SpringBootActuatorUserAgentMetricsApplication {
+public class SpringBootActuatorUserAgentMetricsTestApplication {
 
     @Bean
     public FilterRegistrationBean filter(UserAgentMetricFilter filter) {
@@ -27,6 +27,6 @@ public class SpringBootActuatorUserAgentMetricsApplication {
     }
 
     public static void main(String[] args) {
-        SpringApplication.run(SpringBootActuatorUserAgentMetricsApplication.class, args);
+        SpringApplication.run(SpringBootActuatorUserAgentMetricsTestApplication.class, args);
     }
 }

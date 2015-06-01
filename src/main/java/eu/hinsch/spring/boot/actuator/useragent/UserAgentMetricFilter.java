@@ -2,8 +2,12 @@ package eu.hinsch.spring.boot.actuator.useragent;
 
 import net.sf.uadetector.ReadableUserAgent;
 import net.sf.uadetector.service.UADetectorServiceFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
+import org.springframework.expression.Expression;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.*;
@@ -19,11 +23,20 @@ import static java.util.Arrays.asList;
 @Component
 public class UserAgentMetricFilter implements Filter {
 
+    private static final String DEFAULT_KEY = "#this.name + '.' + #this.versionNumber.major";
+
     private final CounterService counterService;
+    private final BeanFactory beanFactory;
+    private final List<String> keys;
+    private final SpelExpressionParser parser = new SpelExpressionParser();
 
     @Autowired
-    public UserAgentMetricFilter(CounterService counterService) {
+    public UserAgentMetricFilter(final CounterService counterService,
+                                 final BeanFactory beanFactory,
+                                 final UserAgentMetricFilterConfiguration configuration) {
         this.counterService = counterService;
+        this.beanFactory = beanFactory;
+        this.keys = !configuration.getKeys().isEmpty() ? configuration.getKeys() : asList(DEFAULT_KEY);
     }
 
     @Override
@@ -33,22 +46,24 @@ public class UserAgentMetricFilter implements Filter {
         if (request instanceof HttpServletRequest) {
             HttpServletRequest httpServletRequest = (HttpServletRequest) request;
 
-            ReadableUserAgent userAgent = UADetectorServiceFactory.getResourceModuleParser().parse(httpServletRequest.getHeader("User-Agent"));
-            generateKeys(userAgent).stream().forEach(counterService::increment);
+            String userAgentString = httpServletRequest.getHeader("User-Agent");
+            ReadableUserAgent userAgent = UADetectorServiceFactory.getResourceModuleParser().parse(userAgentString);
+            keys.stream()
+                    .map(key -> evaluatePattern(userAgent, key, httpServletRequest))
+                    .map(this::formatKey)
+                    .forEach(counterService::increment);
         }
     }
 
-    // TODO to be replaced by configurable patterns
-    private List<String> generateKeys(ReadableUserAgent userAgent) {
-        String name = escape(userAgent.getName());
-
-        String fullKey = name + "." + userAgent.getVersionNumber().getMajor();
-        String osKey = escape(userAgent.getOperatingSystem().getName());
-
-        return asList(fullKey, name, osKey);
+    private String evaluatePattern(ReadableUserAgent userAgent, String pattern, HttpServletRequest request) {
+        Expression expression = parser.parseExpression(pattern);
+        StandardEvaluationContext context = new StandardEvaluationContext();
+        context.setBeanResolver(new WithCurrentRequestBeanFactoryResolver(beanFactory, request));
+        context.setRootObject(userAgent);
+        return String.valueOf(expression.getValue(context));
     }
 
-    private String escape(String name) {
+    private String formatKey(String name) {
         return name.replace(" ", "-").toLowerCase();
     }
 
@@ -61,4 +76,5 @@ public class UserAgentMetricFilter implements Filter {
     public void destroy() {
 
     }
+
 }
