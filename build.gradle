@@ -1,25 +1,26 @@
 buildscript {
-    ext {
-        springBootVersion = '1.2.3.RELEASE'
-    }
     repositories {
         mavenCentral()
+        maven { url 'http://repo.spring.io/plugins-release' }
     }
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}") 
-        classpath("io.spring.gradle:dependency-management-plugin:0.5.1.RELEASE")
+        classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.6'
     }
 }
 
+ext {
+    springBootVersion = '1.2.3.RELEASE'
+}
+
 apply plugin: 'java'
-apply plugin: 'eclipse'
 apply plugin: 'idea'
-apply plugin: 'spring-boot' 
-apply plugin: 'io.spring.dependency-management' 
+apply plugin: 'propdeps'
+
+version = '0.1.0'
 
 jar {
     baseName = 'spring-boot-actuator-user-agent-metrics'
-    version = '0.1.0'
+    version = project.version
 }
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -30,20 +31,83 @@ repositories {
 
 
 dependencies {
-    compile("org.springframework.boot:spring-boot-starter-actuator")
-    compile("org.springframework.boot:spring-boot-starter-web")
+    compile("org.springframework.boot:spring-boot-starter-actuator:${springBootVersion}")
+    compile("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
     compile("net.sf.uadetector:uadetector-resources:2014.04")
-    testCompile("org.springframework.boot:spring-boot-starter-test") 
+    testCompile("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")
+    optional("org.springframework.boot:spring-boot-configuration-processor:${springBootVersion}")
 }
 
-
-eclipse {
-    classpath {
-         containers.remove('org.eclipse.jdt.launching.JRE_CONTAINER')
-         containers 'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8'
-    }
-}
+compileJava.dependsOn(processResources)
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.4'
+}
+
+if (System.getenv('CI') != 'true') {
+
+    apply plugin: 'signing'
+    apply plugin: 'maven'
+
+    group = 'eu.hinsch'
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from tasks.javadoc.destinationDir
+    }
+
+    task sourcesJar(type: Jar) {
+        from sourceSets.main.allSource
+        classifier = 'sources'
+    }
+
+    artifacts {
+        archives jar
+        archives javadocJar
+        archives sourcesJar
+    }
+
+    signing {
+        sign configurations.archives
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: sonatypeUsername, password: sonatypePassword)
+                }
+
+                pom.project {
+                    name 'spring-boot-actuator-user-agent-metrics'
+                    packaging 'jar'
+                    description 'Filter to log user agent statistics as spring boot actuator metrics'
+                    url 'https://github.com/lukashinsch/spring-boot-actuator-user-agent-metrics/'
+
+                    scm {
+                        url 'scm:git@github.com:lukashinsch/spring-boot-actuator-user-agent-metrics.git'
+                        connection 'scm:git@github.com:lukashinsch/spring-boot-actuator-user-agent-metrics.git'
+                        developerConnection 'scm:git@github.com:lukashinsch/spring-boot-actuator-user-agent-metrics.git'
+                    }
+
+                    licenses {
+                        license {
+                            name 'MIT License'
+                            url 'http://www.opensource.org/licenses/mit-license.php'
+                            distribution 'repo'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id 'lukashinsch'
+                            name 'Lukas Hinsch'
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
