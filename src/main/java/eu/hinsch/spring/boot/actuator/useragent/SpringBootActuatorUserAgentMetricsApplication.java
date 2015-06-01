@@ -20,7 +20,7 @@ public class SpringBootActuatorUserAgentMetricsApplication {
         return bean;
     }
 
-    @RequestMapping("/tes")
+    @RequestMapping("/test")
     @ResponseBody
     public String test() {
         return "ok";

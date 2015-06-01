@@ -9,6 +9,9 @@ import org.springframework.stereotype.Component;
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.List;
+
+import static java.util.Arrays.asList;
 
 /**
  * Created by lh on 31/05/15.
@@ -25,14 +28,24 @@ public class UserAgentMetricFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        chain.doFilter(request, response);
+
         if (request instanceof HttpServletRequest) {
             HttpServletRequest httpServletRequest = (HttpServletRequest) request;
 
             ReadableUserAgent userAgent = UADetectorServiceFactory.getResourceModuleParser().parse(httpServletRequest.getHeader("User-Agent"));
-            String name = userAgent.getName();
-            String key = escape(name) + "." + userAgent.getVersionNumber().getMajor();
-            counterService.increment(key);
+            generateKeys(userAgent).stream().forEach(counterService::increment);
         }
+    }
+
+    // TODO to be replaced by configurable patterns
+    private List<String> generateKeys(ReadableUserAgent userAgent) {
+        String name = escape(userAgent.getName());
+
+        String fullKey = name + "." + userAgent.getVersionNumber().getMajor();
+        String osKey = escape(userAgent.getOperatingSystem().getName());
+
+        return asList(fullKey, name, osKey);
     }
 
     private String escape(String name) {
