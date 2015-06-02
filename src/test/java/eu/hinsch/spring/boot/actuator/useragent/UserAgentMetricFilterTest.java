@@ -53,26 +53,48 @@ public class UserAgentMetricFilterTest {
     @Test
     public void shouldLogUserAgentWithDefaultConfig() throws Exception {
         // given
-        when(request.getHeader("User-Agent")).thenReturn(CHROME);
+        mockUserAgentHeader(CHROME);
 
         // when
         filter.doFilter(request, response, filterChain);
 
         // then
-        verify(counterService).increment("chrome.41");
+        verify(counterService).increment("user-agent.chrome.41");
     }
 
     @Test
     public void shouldLogUserAgentWithConfiguredKeys() throws Exception {
         // given
-        when(request.getHeader("User-Agent")).thenReturn(CHROME);
-        when(configuration.getKeys()).thenReturn(asList("#this.name", "#this.operatingSystem.name"));
+        mockUserAgentHeader(CHROME);
+        mockKeyConfiguration("#this.name", "#this.operatingSystem.name");
 
         // when
         filter.doFilter(request, response, filterChain);
 
         // then
-        verify(counterService).increment("chrome");
-        verify(counterService).increment("windows-7");
+        verify(counterService).increment("user-agent.chrome");
+        verify(counterService).increment("user-agent.windows-7");
+    }
+
+    @Test
+    public void shouldLogRequestData() throws Exception {
+        // given
+        mockUserAgentHeader(CHROME);
+        mockKeyConfiguration("@currentRequest.getHeader('MyHeader')");
+        when(request.getHeader("MyHeader")).thenReturn("MyHeaderValue");
+
+        // when
+        filter.doFilter(request, response, filterChain);
+
+        // then
+        verify(counterService).increment("user-agent.myheadervalue");
+    }
+
+    private void mockKeyConfiguration(String... keys) {
+        when(configuration.getKeys()).thenReturn(asList(keys));
+    }
+
+    private void mockUserAgentHeader(String userAgent) {
+        when(request.getHeader("User-Agent")).thenReturn(userAgent);
     }
 }

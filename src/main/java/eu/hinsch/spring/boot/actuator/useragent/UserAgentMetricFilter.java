@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.List;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 
 /**
  * Created by lh on 31/05/15.
@@ -24,6 +24,7 @@ import static java.util.Arrays.asList;
 public class UserAgentMetricFilter implements Filter {
 
     private static final String DEFAULT_KEY = "#this.name + '.' + #this.versionNumber.major";
+    private static final String COUNTER_PREFIX = "user-agent.";
 
     private final CounterService counterService;
     private final BeanFactory beanFactory;
@@ -43,7 +44,7 @@ public class UserAgentMetricFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         chain.doFilter(request, response);
 
-        List<String> keys = !configuration.getKeys().isEmpty() ? configuration.getKeys() : asList(DEFAULT_KEY);
+        List<String> keys = !configuration.getKeys().isEmpty() ? configuration.getKeys() : singletonList(DEFAULT_KEY);
 
         if (request instanceof HttpServletRequest) {
             HttpServletRequest httpServletRequest = (HttpServletRequest) request;
@@ -53,6 +54,7 @@ public class UserAgentMetricFilter implements Filter {
             keys.stream()
                     .map(key -> evaluatePattern(userAgent, key, httpServletRequest))
                     .map(this::formatKey)
+                    .map(key -> COUNTER_PREFIX + key)
                     .forEach(counterService::increment);
         }
     }
