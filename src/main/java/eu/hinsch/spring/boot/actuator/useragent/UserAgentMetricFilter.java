@@ -27,7 +27,7 @@ public class UserAgentMetricFilter implements Filter {
 
     private final CounterService counterService;
     private final BeanFactory beanFactory;
-    private final List<String> keys;
+    private final UserAgentMetricFilterConfiguration configuration;
     private final SpelExpressionParser parser = new SpelExpressionParser();
 
     @Autowired
@@ -36,12 +36,14 @@ public class UserAgentMetricFilter implements Filter {
                                  final UserAgentMetricFilterConfiguration configuration) {
         this.counterService = counterService;
         this.beanFactory = beanFactory;
-        this.keys = !configuration.getKeys().isEmpty() ? configuration.getKeys() : asList(DEFAULT_KEY);
+        this.configuration = configuration;
     }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         chain.doFilter(request, response);
+
+        List<String> keys = !configuration.getKeys().isEmpty() ? configuration.getKeys() : asList(DEFAULT_KEY);
 
         if (request instanceof HttpServletRequest) {
             HttpServletRequest httpServletRequest = (HttpServletRequest) request;
