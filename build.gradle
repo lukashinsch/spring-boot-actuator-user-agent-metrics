@@ -5,6 +5,7 @@ buildscript {
     }
     dependencies {
         classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.6'
+        classpath("org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.1")
     }
 }
 
@@ -15,6 +16,8 @@ ext {
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'propdeps'
+apply plugin: 'jacoco'
+apply plugin: 'com.github.kt3k.coveralls'
 
 version = '0.1.0'
 
@@ -39,6 +42,20 @@ dependencies {
 }
 
 compileJava.dependsOn(processResources)
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true // coveralls plugin depends on xml format report
+        html.enabled = true
+    }
+}
+
+test {
+    testLogging {
+        events "failed"
+        exceptionFormat "full" // show assertion errors in build
+    }
+}
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.4'
