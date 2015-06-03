@@ -1,18 +1,26 @@
 package eu.hinsch.spring.boot.actuator.useragent;
 
+import org.apache.coyote.Request;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.boot.actuate.metrics.CounterService;
 
 import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.io.IOException;
+
 import static java.util.Arrays.asList;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -88,6 +96,15 @@ public class UserAgentMetricFilterTest {
 
         // then
         verify(counterService).increment("user-agent.myheadervalue");
+    }
+
+    @Test
+    public void shouldNotLogAnythingIfRequestIsNotHttpServletRequest() throws Exception {
+        // when
+        filter.doFilter(Mockito.mock(ServletRequest.class), response, filterChain);
+
+        // then
+        verify(counterService, never()).increment(anyString());
     }
 
     private void mockKeyConfiguration(String... keys) {
