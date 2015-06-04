@@ -10,6 +10,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.boot.actuate.metrics.CounterService;
 
 import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,6 +38,9 @@ public class UserAgentMetricFilterTest {
 
     @Mock
     private HttpServletRequest request;
+
+    @Mock
+    private ServletRequest servletRequest;
 
     @Mock
     private HttpServletResponse response;
@@ -93,12 +97,41 @@ public class UserAgentMetricFilterTest {
     }
 
     @Test
+    public void shouldUseOtherBean() throws Exception {
+        // given
+        mockUserAgentHeader(CHROME);
+        when(beanFactory.getBean("myBean")).thenReturn("value");
+        mockKeyConfiguration("@myBean");
+
+        // when
+        filter.doFilter(request, response, filterChain);
+
+        // then
+        verify(counterService).increment("user-agent.value");
+    }
+
+    @Test
     public void shouldNotLogAnythingIfRequestIsNotHttpServletRequest() throws Exception {
         // when
-        filter.doFilter(Mockito.mock(ServletRequest.class), response, filterChain);
+        filter.doFilter(servletRequest, response, filterChain);
 
         // then
         verify(counterService, never()).increment(anyString());
+    }
+
+    @Test
+    public void shouldCallFilterChain() throws Exception {
+        // when
+        filter.doFilter(servletRequest, response, filterChain);
+
+        // then
+        verify(filterChain).doFilter(servletRequest, response);
+    }
+
+    @Test
+    public void shouldGenerateCoverageOnUnusedMethods() throws ServletException {
+        filter.init(null);
+        filter.destroy();
     }
 
     private void mockKeyConfiguration(String... keys) {
