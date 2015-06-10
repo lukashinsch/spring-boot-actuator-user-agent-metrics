@@ -1,5 +1,6 @@
-package eu.hinsch.spring.boot.actuator.useragent;
+package eu.hinsch.spring.boot.actuator.useragenttest;
 
+import eu.hinsch.spring.boot.actuator.useragent.UserAgentMetricFilter;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
