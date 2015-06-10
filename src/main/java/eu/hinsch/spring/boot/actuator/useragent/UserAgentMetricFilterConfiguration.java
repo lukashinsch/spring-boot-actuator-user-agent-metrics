@@ -13,6 +13,7 @@ import java.util.List;
 @ConfigurationProperties("user-agent-metric")
 public class UserAgentMetricFilterConfiguration {
     private List<String> keys = new ArrayList<>();
+    private List<String> urlPatterns = new ArrayList<>();
 
     public List<String> getKeys() {
         return keys;
@@ -20,5 +21,13 @@ public class UserAgentMetricFilterConfiguration {
 
     public void setKeys(List<String> keys) {
         this.keys = keys;
+    }
+
+    public List<String> getUrlPatterns() {
+        return urlPatterns;
+    }
+
+    public void setUrlPatterns(List<String> urlPatterns) {
+        this.urlPatterns = urlPatterns;
     }
 }

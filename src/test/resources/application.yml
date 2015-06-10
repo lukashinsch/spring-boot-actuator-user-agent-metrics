@@ -4,3 +4,7 @@ user-agent-metric:
     - '#this.name + "." + #this.versionNumber.major'
     - '#this.operatingSystem.name'
     - '@currentRequest.remoteAddr'
+  url-patterns: /test
+# alternatively:
+#    - /test
+#    - /test2
