@@ -1,7 +1,6 @@
 package eu.hinsch.spring.boot.actuator.useragent;
 
 import net.sf.uadetector.ReadableUserAgent;
-import net.sf.uadetector.service.UADetectorServiceFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
@@ -30,14 +29,17 @@ public class UserAgentMetricFilter implements Filter {
     private final BeanFactory beanFactory;
     private final UserAgentMetricFilterConfiguration configuration;
     private final SpelExpressionParser parser = new SpelExpressionParser();
+    private final UserAgentParser userAgentParser;
 
     @Autowired
     public UserAgentMetricFilter(final CounterService counterService,
                                  final BeanFactory beanFactory,
-                                 final UserAgentMetricFilterConfiguration configuration) {
+                                 final UserAgentMetricFilterConfiguration configuration,
+                                 final UserAgentParser userAgentParser) {
         this.counterService = counterService;
         this.beanFactory = beanFactory;
         this.configuration = configuration;
+        this.userAgentParser = userAgentParser;
     }
 
     @Override
@@ -50,7 +52,7 @@ public class UserAgentMetricFilter implements Filter {
             HttpServletRequest httpServletRequest = (HttpServletRequest) request;
 
             String userAgentString = httpServletRequest.getHeader("User-Agent");
-            ReadableUserAgent userAgent = UADetectorServiceFactory.getResourceModuleParser().parse(userAgentString);
+            ReadableUserAgent userAgent = userAgentParser.parseUserAgentString(userAgentString);
             keys.stream()
                     .map(key -> evaluatePattern(userAgent, key, httpServletRequest))
                     .map(this::formatKey)
