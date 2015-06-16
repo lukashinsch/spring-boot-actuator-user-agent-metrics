@@ -48,12 +48,13 @@ public class UserAgentMetricFilterTest {
     @Mock
     private FilterChain filterChain;
 
-    @InjectMocks
     private UserAgentMetricFilter filter;
 
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
+        // TODO mock userAgentParser and adjust test accordingly for proper unit testing
+        filter = new UserAgentMetricFilter(counterService, beanFactory, configuration, new UserAgentParser());
     }
 
     @Test
