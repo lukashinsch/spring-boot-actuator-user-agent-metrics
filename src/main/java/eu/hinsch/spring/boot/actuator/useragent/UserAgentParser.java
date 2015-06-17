@@ -9,7 +9,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserAgentParser {
 
-    private final UserAgentStringParser resourceModuleParser = UADetectorServiceFactory.getResourceModuleParser();
+    private final UserAgentStringParser resourceModuleParser;
+
+    public UserAgentParser() {
+        resourceModuleParser = UADetectorServiceFactory.getResourceModuleParser();
+    }
 
     @Cacheable("user-agent-parser")
     public ReadableUserAgent parseUserAgentString(String userAgentString) {
