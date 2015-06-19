@@ -18,4 +18,6 @@ runtime("eu.hinsch:spring-boot-actuator-user-agent-metrics:0.1.8")
 ```
 
 ### Configuration
-TODO
+
+For an example see [SpringBootActuatorUserAgentMetricsTestApplication](https://github.com/lukashinsch/spring-boot-actuator-user-agent-metrics/blob/master/src/test/java/eu/hinsch/spring/boot/actuator/useragent/SpringBootActuatorUserAgentMetricsTestApplication.java)
+and [application.yml](https://github.com/lukashinsch/spring-boot-actuator-user-agent-metrics/blob/master/src/test/resources/application.yml)
