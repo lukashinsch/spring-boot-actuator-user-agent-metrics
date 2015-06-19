@@ -1,10 +1,14 @@
 user-agent-metric:
   keys:
+    # e.g. chrome
     - '#this.name'
+    # e.g. chrome.41
     - '#this.name + "." + #this.versionNumber.major'
+    # e.g. os-x
     - '#this.operatingSystem.name'
+    # client ip (just as an example of using request data)
     - '@currentRequest.remoteAddr'
   url-patterns: /test
-# alternatively:
-#    - /test
-#    - /test2
+  # alternatively:
+  #    - /test
+  #    - /test2
