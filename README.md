@@ -1,3 +1,7 @@
+[![Coverage Status](https://coveralls.io/repos/lukashinsch/spring-boot-actuator-user-agent-metrics/badge.svg?branch=master)](https://coveralls.io/r/lukashinsch/spring-boot-actuator-user-agent-metrics?branch=master)
+[![Build Status](https://travis-ci.org/lukashinsch/spring-boot-actuator-user-agent-metrics.svg?branch=master)](https://travis-ci.org/lukashinsch/spring-boot-actuator-user-agent-metrics)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/eu.hinsch/spring-boot-actuator-user-agent-metrics/badge.svg)](https://maven-badges.herokuapp.com/maven-central/spring-boot-actuator-user-agent-metrics/)
+
 # spring-boot-actuator-user-agent-metrics
 Filter to log user agent statistics as spring boot actuator metrics
 
