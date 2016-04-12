@@ -12,13 +12,13 @@ Filter to log user agent statistics as spring boot actuator metrics
 <dependency>
   <groupId>eu.hinsch</groupId>
   <artifactId>spring-boot-actuator-user-agent-metrics</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
 </dependency>
 ```
 
 ### Gradle
 ```
-runtime("eu.hinsch:spring-boot-actuator-user-agent-metrics:0.1.8")
+runtime("eu.hinsch:spring-boot-actuator-user-agent-metrics:0.1.1")
 ```
 
 ### Configuration
