@@ -1,63 +1,55 @@
 package eu.hinsch.spring.boot.actuator.useragent;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import java.io.IOException;
+import java.util.List;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.sf.uadetector.ReadableUserAgent;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
-import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.springframework.web.filter.OncePerRequestFilter;
 
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.util.List;
-
-import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Created by lh on 31/05/15.
  */
-@Component
-public class UserAgentMetricFilter implements Filter {
+@Slf4j
+@RequiredArgsConstructor
+public class UserAgentMetricFilter extends OncePerRequestFilter {
 
-    private static final String DEFAULT_KEY = "#this.name + '.' + #this.versionNumber.major";
-    private static final String COUNTER_PREFIX = "user-agent.";
+    private static final String METRIC_NAME = "user-agent";
 
-    private final CounterService counterService;
+    private final MeterRegistry meterRegistry;
     private final BeanFactory beanFactory;
     private final UserAgentMetricFilterConfiguration configuration;
-    private final SpelExpressionParser parser = new SpelExpressionParser();
     private final UserAgentParser userAgentParser;
-
-    @Autowired
-    public UserAgentMetricFilter(final CounterService counterService,
-                                 final BeanFactory beanFactory,
-                                 final UserAgentMetricFilterConfiguration configuration,
-                                 final UserAgentParser userAgentParser) {
-        this.counterService = counterService;
-        this.beanFactory = beanFactory;
-        this.configuration = configuration;
-        this.userAgentParser = userAgentParser;
-    }
+    private final SpelExpressionParser parser = new SpelExpressionParser();
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-        chain.doFilter(request, response);
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        filterChain.doFilter(request, response);
 
-        List<String> keys = !configuration.getKeys().isEmpty() ? configuration.getKeys() : singletonList(DEFAULT_KEY);
-
-        if (request instanceof HttpServletRequest) {
-            HttpServletRequest httpServletRequest = (HttpServletRequest) request;
-
-            String userAgentString = httpServletRequest.getHeader("User-Agent");
+        String userAgentString = request.getHeader("User-Agent");
+        if (StringUtils.hasText(userAgentString)) {
+            log.debug("User agent: " + userAgentString);
             ReadableUserAgent userAgent = userAgentParser.parseUserAgentString(userAgentString);
-            keys.stream()
-                    .map(key -> evaluatePattern(userAgent, key, httpServletRequest))
-                    .map(this::formatKey)
-                    .map(key -> COUNTER_PREFIX + key)
-                    .forEach(counterService::increment);
+            List<Tag> tags = configuration.getTags()
+                    .entrySet()
+                    .stream()
+                    .map(entry -> Tag.of(entry.getKey(), evaluatePattern(userAgent, entry.getValue(), request)))
+                    .collect(toList());
+            meterRegistry.counter(METRIC_NAME, tags).increment();
         }
     }
 
@@ -68,19 +60,4 @@ public class UserAgentMetricFilter implements Filter {
         context.setRootObject(userAgent);
         return String.valueOf(expression.getValue(context));
     }
-
-    private String formatKey(String name) {
-        return name.replace(" ", "-").toLowerCase();
-    }
-
-    @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
-
-    }
-
-    @Override
-    public void destroy() {
-
-    }
-
 }

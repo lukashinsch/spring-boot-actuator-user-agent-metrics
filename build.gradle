@@ -1,44 +1,57 @@
 buildscript {
+    ext {
+        springBootVersion = '2.1.4.RELEASE'
+    }
     repositories {
         mavenCentral()
         maven { url 'http://repo.spring.io/plugins-release' }
     }
     dependencies {
-        classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.6'
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
         classpath("org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.1")
     }
 }
 
 ext {
-    springBootVersion = '1.2.3.RELEASE'
+    springBootVersion = '2.1.4.RELEASE'
 }
 
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'idea'
-apply plugin: 'propdeps'
 apply plugin: 'jacoco'
 apply plugin: 'com.github.kt3k.coveralls'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
-version = '0.1.1'
+version = '0.2.0'
+group = 'eu.hinsch'
 
 jar {
     baseName = 'spring-boot-actuator-user-agent-metrics'
     version = project.version
 }
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 11
+targetCompatibility = 11
 
 repositories {
     mavenCentral()
 }
 
+bootJar.enabled false
+jar.enabled true
 
 dependencies {
-    compile("org.springframework.boot:spring-boot-starter-actuator:${springBootVersion}")
-    compile("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
+    compile("org.springframework.boot:spring-boot-starter-actuator")
+    compile("org.springframework.boot:spring-boot-starter-web")
     compile("net.sf.uadetector:uadetector-resources:2014.04")
-    testCompile("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")
-    optional("org.springframework.boot:spring-boot-configuration-processor:${springBootVersion}")
+    testCompile("org.springframework.boot:spring-boot-starter-test")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+    testCompileOnly("org.projectlombok:lombok")
+    testAnnotationProcessor("org.projectlombok:lombok")
 }
 
 compileJava.dependsOn(processResources)
@@ -57,74 +70,70 @@ test {
     }
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.4'
+wrapper {
+    gradleVersion = '5.6.1'
 }
 
-if (System.getenv('CI') != 'true') {
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier = 'sources'
+}
 
-    apply plugin: 'signing'
-    apply plugin: 'maven'
+task javadocJar(type: Jar) {
+    from javadoc
+    archiveClassifier = 'javadoc'
+}
 
-    group = 'eu.hinsch'
-
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
-        from tasks.javadoc.destinationDir
-    }
-
-    task sourcesJar(type: Jar) {
-        from sourceSets.main.allSource
-        classifier = 'sources'
-    }
-
-    artifacts {
-        archives jar
-        archives javadocJar
-        archives sourcesJar
-    }
-
-    signing {
-        sign configurations.archives
-    }
-
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                    authentication(userName: sonatypeUsername, password: sonatypePassword)
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'spring-boot-actuator-user-agent-metrics'
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
                 }
-
-                pom.project {
-                    name 'spring-boot-actuator-user-agent-metrics'
-                    packaging 'jar'
-                    description 'Filter to log user agent statistics as spring boot actuator metrics'
-                    url 'https://github.com/lukashinsch/spring-boot-actuator-user-agent-metrics/'
-
-                    scm {
-                        url 'scm:git@github.com:lukashinsch/spring-boot-actuator-user-agent-metrics.git'
-                        connection 'scm:git@github.com:lukashinsch/spring-boot-actuator-user-agent-metrics.git'
-                        developerConnection 'scm:git@github.com:lukashinsch/spring-boot-actuator-user-agent-metrics.git'
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+            pom {
+                name = 'spring-boot-actuator-user-agent-metrics'
+                description = 'Filter to log user agent statistics as spring boot actuator metrics'
+                url = 'https://github.com/lukashinsch/spring-boot-actuator-user-agent-metrics'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'http://www.opensource.org/licenses/mit-license.php'
                     }
-
-                    licenses {
-                        license {
-                            name 'MIT License'
-                            url 'http://www.opensource.org/licenses/mit-license.php'
-                            distribution 'repo'
-                        }
+                }
+                developers {
+                    developer {
+                        id = 'lukashinsch'
+                        name = 'Lukas Hinsch'
                     }
-
-                    developers {
-                        developer {
-                            id 'lukashinsch'
-                            name 'Lukas Hinsch'
-                        }
-                    }
+                }
+                scm {
+                    connection = 'scm:git:git@github.com:lukashinsch/spring-boot-actuator-user-agent-metrics.git'
+                    url = 'https://github.com/lukashinsch/spring-boot-actuator-user-agent-metrics'
                 }
             }
         }
     }
+    repositories {
+        maven {
+            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+
+javadoc {
+    options.addBooleanOption('html5', true)
 }
