@@ -1,12 +1,10 @@
 user-agent-metric:
   enabled: true
   tags:
-    # e.g. chrome
-    name: '#this.name'
-    # e.g. chrome.41
-    nameVersion: '#this.name + "." + #this.versionNumber.major'
-    # e.g. os-x
-    osName: '#this.operatingSystem.name'
+    - OperatingSystemNameVersionMajor
+    - DeviceClass
+    - AgentName
+    - AgentNameVersionMajor
 
   url-patterns: /test
   # alternatively:

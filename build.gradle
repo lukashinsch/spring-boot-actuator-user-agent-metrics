@@ -25,7 +25,7 @@ apply plugin: 'io.spring.dependency-management'
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
-version = '0.2.0'
+version = '0.3.0'
 group = 'eu.hinsch'
 
 jar {
@@ -45,7 +45,7 @@ jar.enabled true
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-actuator")
     compile("org.springframework.boot:spring-boot-starter-web")
-    compile("net.sf.uadetector:uadetector-resources:2014.04")
+    compile("nl.basjes.parse.useragent:yauaa:5.12")
     testCompile("org.springframework.boot:spring-boot-starter-test")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     compileOnly("org.projectlombok:lombok")

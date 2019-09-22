@@ -4,10 +4,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import java.util.List;
-import java.util.Map;
 import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.junit.Before;
@@ -17,10 +14,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
-import org.springframework.beans.factory.BeanFactory;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
@@ -44,9 +39,6 @@ public class UserAgentMetricFilterTest {
     public MockitoRule rule = MockitoJUnit.rule();
 
     @Mock
-    private BeanFactory beanFactory;
-
-    @Mock
     private MeterRegistry meterRegistry;
 
     @Mock
@@ -64,14 +56,16 @@ public class UserAgentMetricFilterTest {
     @Mock
     private Counter counter;
 
-    @Spy
-    private UserAgentParser userAgentParser = new UserAgentParser();
-
     @InjectMocks
     private UserAgentMetricFilter filter;
 
     @Captor
     private ArgumentCaptor<List<Tag>> tagListCaptor;
+
+    @Before
+    public void initAnalyzer() {
+        filter.buildAnalyzer();
+    }
 
     @Test
     public void shouldLogExecutionWitoutTagsWithDefaultConfig() throws Exception {
@@ -92,7 +86,7 @@ public class UserAgentMetricFilterTest {
     public void shouldLogUserAgentWithConfiguredKeys() throws Exception {
         // given
         mockUserAgentHeader(CHROME);
-        mockTagConfiguration(Map.of("name", "#this.name", "osName", "#this.operatingSystem.name"));
+        mockTagConfiguration(List.of("AgentName", "OperatingSystemNameVersionMajor"));
         when(meterRegistry.counter(anyString(), anyList())).thenReturn(counter);
 
         // when
@@ -102,44 +96,8 @@ public class UserAgentMetricFilterTest {
         verify(meterRegistry).counter(eq("user-agent"), tagListCaptor.capture());
         verify(counter).increment();
         List<Tag> tags = tagListCaptor.getValue();
-        assertThat(tags, hasItem(Tag.of("name", "Chrome")));
-        assertThat(tags, hasItem(Tag.of("osName", "Windows 7")));
-    }
-
-    @Test
-    public void shouldLogRequestData() throws Exception {
-        // given
-        mockUserAgentHeader(CHROME);
-        mockTagConfiguration(Map.of("customHeader", "@currentRequest.getHeader('MyHeader')"));
-        when(request.getHeader("MyHeader")).thenReturn("MyHeaderValue");
-        when(meterRegistry.counter(anyString(), anyList())).thenReturn(counter);
-
-        // when
-        filter.doFilter(request, response, filterChain);
-
-        // then
-        verify(meterRegistry).counter(eq("user-agent"), tagListCaptor.capture());
-        verify(counter).increment();
-        List<Tag> tags = tagListCaptor.getValue();
-        assertThat(tags, hasItem(Tag.of("customHeader", "MyHeaderValue")));
-    }
-
-    @Test
-    public void shouldUseOtherBean() throws Exception {
-        // given
-        mockUserAgentHeader(CHROME);
-        when(beanFactory.getBean("myBean")).thenReturn("value");
-        mockTagConfiguration(Map.of("customBean", "@myBean"));
-        when(meterRegistry.counter(anyString(), anyList())).thenReturn(counter);
-
-        // when
-        filter.doFilter(request, response, filterChain);
-
-        // then
-        verify(meterRegistry).counter(eq("user-agent"), tagListCaptor.capture());
-        verify(counter).increment();
-        List<Tag> tags = tagListCaptor.getValue();
-        assertThat(tags, hasItem(Tag.of("customBean", "value")));
+        assertThat(tags, hasItem(Tag.of("AgentName", "Chrome")));
+        assertThat(tags, hasItem(Tag.of("OperatingSystemNameVersionMajor", "Windows 7")));
     }
 
     @Test
@@ -153,7 +111,7 @@ public class UserAgentMetricFilterTest {
         verify(meterRegistry, never()).counter(anyString(), anyList());
     }
 
-    private void mockTagConfiguration(Map<String, String> config) {
+    private void mockTagConfiguration(List<String> config) {
         when(configuration.getTags()).thenReturn(config);
     }
 
