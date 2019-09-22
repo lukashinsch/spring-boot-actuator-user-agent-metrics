@@ -1,7 +1,6 @@
 package eu.hinsch.spring.boot.actuator.useragent;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -31,10 +30,8 @@ public class UserAgentMetricFilterAutoConfiguration {
     @ConditionalOnProperty(value = "user-agent-metric.enabled", havingValue = "true")
     @Bean
     UserAgentMetricFilter userAgentMetricFilter(MeterRegistry meterRegistry,
-                                                BeanFactory beanFactory,
-                                                UserAgentParser userAgentParser,
                                                 UserAgentMetricFilterConfiguration configuration) {
-        return new UserAgentMetricFilter(meterRegistry, beanFactory, configuration, userAgentParser);
+        return new UserAgentMetricFilter(meterRegistry, configuration);
 
     }
 }

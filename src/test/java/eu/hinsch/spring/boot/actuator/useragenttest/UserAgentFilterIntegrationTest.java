@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringJUnit4ClassRunner.class)
 @WebAppConfiguration
 @TestPropertySource(properties = {
-        "user-agent-metric.tags.browserName = #this.name",
+        "user-agent-metric.tags[0] = AgentName",
         "user-agent-metric.url-patterns[0] = /testmvc",
         "user-agent-metric.enabled = true"
 })
@@ -73,6 +73,6 @@ public class UserAgentFilterIntegrationTest {
         mockMvc.perform(get("/testmvc").header("User-Agent", CHROME)).andExpect(content().string("ok"));
 
         // then
-        assertThat(meterRegistry.counter("user-agent", List.of(Tag.of("browserName", "Chrome"))).count(), is(2.0));
+        assertThat(meterRegistry.counter("user-agent", List.of(Tag.of("AgentName", "Chrome"))).count(), is(2.0));
     }
 }
