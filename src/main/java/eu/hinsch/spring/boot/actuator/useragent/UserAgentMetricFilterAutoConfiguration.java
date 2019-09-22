@@ -1,7 +1,9 @@
 package eu.hinsch.spring.boot.actuator.useragent;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.embedded.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -13,13 +15,26 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan(basePackageClasses = UserAgentMetricFilterAutoConfiguration.class)
 public class UserAgentMetricFilterAutoConfiguration {
 
-    @ConditionalOnProperty("user-agent-metric.url-patterns")
+    @ConditionalOnProperty(value = "user-agent-metric.enabled", havingValue = "true")
     @Bean
-    public FilterRegistrationBean userAgentMetricFilterRegistrationBean(final UserAgentMetricFilter filter,
-                                                                        UserAgentMetricFilterConfiguration configuration) {
-        final FilterRegistrationBean bean = new FilterRegistrationBean();
-        bean.setFilter(filter);
-        bean.setUrlPatterns(configuration.getUrlPatterns());
+    FilterRegistrationBean<UserAgentMetricFilter> userAgentMetricFilterRegistrationBean(
+            UserAgentMetricFilter userAgentMetricFilter,
+            UserAgentMetricFilterConfiguration configuration) {
+        FilterRegistrationBean<UserAgentMetricFilter> bean = new FilterRegistrationBean<>();
+        bean.setFilter(userAgentMetricFilter);
+        if (!configuration.getUrlPatterns().isEmpty()) {
+            bean.setUrlPatterns(configuration.getUrlPatterns());
+        }
         return bean;
+    }
+
+    @ConditionalOnProperty(value = "user-agent-metric.enabled", havingValue = "true")
+    @Bean
+    UserAgentMetricFilter userAgentMetricFilter(MeterRegistry meterRegistry,
+                                                BeanFactory beanFactory,
+                                                UserAgentParser userAgentParser,
+                                                UserAgentMetricFilterConfiguration configuration) {
+        return new UserAgentMetricFilter(meterRegistry, beanFactory, configuration, userAgentParser);
+
     }
 }

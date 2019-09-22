@@ -1,23 +1,36 @@
 package eu.hinsch.spring.boot.actuator.useragent;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.boot.actuate.metrics.CounterService;
-
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import java.util.List;
+import java.util.Map;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
+import org.springframework.beans.factory.BeanFactory;
 
-import static java.util.Arrays.asList;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Created by lukas.hinsch on 02.06.2015.
@@ -27,11 +40,14 @@ public class UserAgentMetricFilterTest {
     private static final String CHROME = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko)" +
             "Chrome/41.0.2228.0 Safari/537.36";
 
+    @Rule
+    public MockitoRule rule = MockitoJUnit.rule();
+
     @Mock
     private BeanFactory beanFactory;
 
     @Mock
-    private CounterService counterService;
+    private MeterRegistry meterRegistry;
 
     @Mock
     private UserAgentMetricFilterConfiguration configuration;
@@ -40,61 +56,72 @@ public class UserAgentMetricFilterTest {
     private HttpServletRequest request;
 
     @Mock
-    private ServletRequest servletRequest;
-
-    @Mock
     private HttpServletResponse response;
 
     @Mock
     private FilterChain filterChain;
 
+    @Mock
+    private Counter counter;
+
+    @Spy
+    private UserAgentParser userAgentParser = new UserAgentParser();
+
+    @InjectMocks
     private UserAgentMetricFilter filter;
 
-    @Before
-    public void setup() {
-        MockitoAnnotations.initMocks(this);
-        // TODO mock userAgentParser and adjust test accordingly for proper unit testing
-        filter = new UserAgentMetricFilter(counterService, beanFactory, configuration, new UserAgentParser());
-    }
+    @Captor
+    private ArgumentCaptor<List<Tag>> tagListCaptor;
 
     @Test
-    public void shouldLogUserAgentWithDefaultConfig() throws Exception {
+    public void shouldLogExecutionWitoutTagsWithDefaultConfig() throws Exception {
         // given
         mockUserAgentHeader(CHROME);
+        when(meterRegistry.counter(anyString(), anyList())).thenReturn(counter);
 
         // when
         filter.doFilter(request, response, filterChain);
 
         // then
-        verify(counterService).increment("user-agent.chrome.41");
+        verify(meterRegistry).counter(eq("user-agent"), tagListCaptor.capture());
+        verify(counter).increment();
+        assertThat(tagListCaptor.getValue(), hasSize(0));
     }
 
     @Test
     public void shouldLogUserAgentWithConfiguredKeys() throws Exception {
         // given
         mockUserAgentHeader(CHROME);
-        mockKeyConfiguration("#this.name", "#this.operatingSystem.name");
+        mockTagConfiguration(Map.of("name", "#this.name", "osName", "#this.operatingSystem.name"));
+        when(meterRegistry.counter(anyString(), anyList())).thenReturn(counter);
 
         // when
         filter.doFilter(request, response, filterChain);
 
         // then
-        verify(counterService).increment("user-agent.chrome");
-        verify(counterService).increment("user-agent.windows-7");
+        verify(meterRegistry).counter(eq("user-agent"), tagListCaptor.capture());
+        verify(counter).increment();
+        List<Tag> tags = tagListCaptor.getValue();
+        assertThat(tags, hasItem(Tag.of("name", "Chrome")));
+        assertThat(tags, hasItem(Tag.of("osName", "Windows 7")));
     }
 
     @Test
     public void shouldLogRequestData() throws Exception {
         // given
         mockUserAgentHeader(CHROME);
-        mockKeyConfiguration("@currentRequest.getHeader('MyHeader')");
+        mockTagConfiguration(Map.of("customHeader", "@currentRequest.getHeader('MyHeader')"));
         when(request.getHeader("MyHeader")).thenReturn("MyHeaderValue");
+        when(meterRegistry.counter(anyString(), anyList())).thenReturn(counter);
 
         // when
         filter.doFilter(request, response, filterChain);
 
         // then
-        verify(counterService).increment("user-agent.myheadervalue");
+        verify(meterRegistry).counter(eq("user-agent"), tagListCaptor.capture());
+        verify(counter).increment();
+        List<Tag> tags = tagListCaptor.getValue();
+        assertThat(tags, hasItem(Tag.of("customHeader", "MyHeaderValue")));
     }
 
     @Test
@@ -102,41 +129,32 @@ public class UserAgentMetricFilterTest {
         // given
         mockUserAgentHeader(CHROME);
         when(beanFactory.getBean("myBean")).thenReturn("value");
-        mockKeyConfiguration("@myBean");
+        mockTagConfiguration(Map.of("customBean", "@myBean"));
+        when(meterRegistry.counter(anyString(), anyList())).thenReturn(counter);
 
         // when
         filter.doFilter(request, response, filterChain);
 
         // then
-        verify(counterService).increment("user-agent.value");
+        verify(meterRegistry).counter(eq("user-agent"), tagListCaptor.capture());
+        verify(counter).increment();
+        List<Tag> tags = tagListCaptor.getValue();
+        assertThat(tags, hasItem(Tag.of("customBean", "value")));
     }
 
     @Test
-    public void shouldNotLogAnythingIfRequestIsNotHttpServletRequest() throws Exception {
+    public void shouldCallFilterChainWithoutUserAgent() throws Exception {
         // when
-        filter.doFilter(servletRequest, response, filterChain);
+        filter.doFilter(request, response, filterChain);
 
         // then
-        verify(counterService, never()).increment(anyString());
+        verify(filterChain).doFilter(request, response);
+        verify(counter, never()).increment();
+        verify(meterRegistry, never()).counter(anyString(), anyList());
     }
 
-    @Test
-    public void shouldCallFilterChain() throws Exception {
-        // when
-        filter.doFilter(servletRequest, response, filterChain);
-
-        // then
-        verify(filterChain).doFilter(servletRequest, response);
-    }
-
-    @Test
-    public void shouldGenerateCoverageOnUnusedMethods() throws ServletException {
-        filter.init(null);
-        filter.destroy();
-    }
-
-    private void mockKeyConfiguration(String... keys) {
-        when(configuration.getKeys()).thenReturn(asList(keys));
+    private void mockTagConfiguration(Map<String, String> config) {
+        when(configuration.getTags()).thenReturn(config);
     }
 
     private void mockUserAgentHeader(String userAgent) {

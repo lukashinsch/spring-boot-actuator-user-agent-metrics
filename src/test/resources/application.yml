@@ -1,14 +1,20 @@
 user-agent-metric:
-  keys:
+  enabled: true
+  tags:
     # e.g. chrome
-    - '#this.name'
+    name: '#this.name'
     # e.g. chrome.41
-    - '#this.name + "." + #this.versionNumber.major'
+    nameVersion: '#this.name + "." + #this.versionNumber.major'
     # e.g. os-x
-    - '#this.operatingSystem.name'
-    # client ip (just as an example of using request data)
-    - '@currentRequest.remoteAddr'
+    osName: '#this.operatingSystem.name'
+
   url-patterns: /test
   # alternatively:
   #    - /test
   #    - /test2
+management:
+  endpoints:
+    enabled-by-default: true
+    web:
+      exposure:
+        include: "*"
