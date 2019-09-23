@@ -29,15 +29,18 @@ public class UserAgentMetricFilter extends OncePerRequestFilter {
 
     private final MeterRegistry meterRegistry;
     private final UserAgentMetricFilterConfiguration configuration;
-    private UserAgentAnalyzer uaa;
+    private UserAgentAnalyzer userAgentAnalyzer;
 
     @PostConstruct
     public void buildAnalyzer() {
-        uaa = UserAgentAnalyzer
-                .newBuilder()
+        var builder = UserAgentAnalyzer.newBuilder()
                 .hideMatcherLoadStats()
                 .withCache(configuration.getCacheSize())
-                .build();
+                .withFields(configuration.getTags().toArray(String[]::new));
+        if (configuration.isInitOnStartup()) {
+            builder.preheat();
+        }
+        userAgentAnalyzer = builder.build();
     }
 
     @Override
@@ -49,7 +52,7 @@ public class UserAgentMetricFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(userAgentString)) {
             log.debug("User agent: " + userAgentString);
 
-            UserAgent agent = uaa.parse(userAgentString);
+            UserAgent agent = userAgentAnalyzer.parse(userAgentString);
             List<Tag> tags = configuration.getTags()
                     .stream()
                     .map(tag -> Tag.of(tag, agent.getValue(tag)))

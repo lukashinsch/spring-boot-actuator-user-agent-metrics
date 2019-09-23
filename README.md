@@ -15,7 +15,7 @@ Note: do not use version 0.2.0, while it was updated to work with current framew
 
 ### Gradle
 ```
-runtime("eu.hinsch:spring-boot-actuator-user-agent-metrics:0.3.0")
+runtime("eu.hinsch:spring-boot-actuator-user-agent-metrics:0.3.1")
 ```
 
 ### Maven
@@ -23,7 +23,7 @@ runtime("eu.hinsch:spring-boot-actuator-user-agent-metrics:0.3.0")
 <dependency>
   <groupId>eu.hinsch</groupId>
   <artifactId>spring-boot-actuator-user-agent-metrics</artifactId>
-  <version>0.3.0</version>
+  <version>0.3.1</version>
 </dependency>
 ```
 
