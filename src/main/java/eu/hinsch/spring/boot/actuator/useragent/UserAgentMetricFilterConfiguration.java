@@ -20,6 +20,12 @@ public class UserAgentMetricFilterConfiguration {
     private boolean enabled;
 
     /**
+     * Flag to toggle parser initialization on startup.
+     * This will add some seconds to the app start time at the benefit of a faster first request response.
+     */
+    private boolean initOnStartup = true;
+
+    /**
      * Number of user agent strings to cache
      */
     private int cacheSize = 10000;
