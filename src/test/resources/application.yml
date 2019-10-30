@@ -6,10 +6,10 @@ user-agent-metric:
     - AgentName
     - AgentNameVersionMajor
 
-  url-patterns: /test
-  # alternatively:
-  #    - /test
-  #    - /test2
+  url-patterns:
+    - /test/*
+  exclude-patterns:
+    - /test/ex.*
 management:
   endpoints:
     enabled-by-default: true

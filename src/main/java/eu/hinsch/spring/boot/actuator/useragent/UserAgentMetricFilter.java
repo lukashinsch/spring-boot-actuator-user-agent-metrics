@@ -4,6 +4,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import java.io.IOException;
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -30,9 +32,10 @@ public class UserAgentMetricFilter extends OncePerRequestFilter {
     private final MeterRegistry meterRegistry;
     private final UserAgentMetricFilterConfiguration configuration;
     private UserAgentAnalyzer userAgentAnalyzer;
+    private List<Pattern> excludePatterns;
 
     @PostConstruct
-    public void buildAnalyzer() {
+    public void initialize() {
         var builder = UserAgentAnalyzer.newBuilder()
                 .hideMatcherLoadStats()
                 .withCache(configuration.getCacheSize())
@@ -41,6 +44,9 @@ public class UserAgentMetricFilter extends OncePerRequestFilter {
             builder.preheat();
         }
         userAgentAnalyzer = builder.build();
+        excludePatterns = configuration.getExcludePatterns().stream()
+                .map(Pattern::compile)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -50,7 +56,9 @@ public class UserAgentMetricFilter extends OncePerRequestFilter {
 
         String userAgentString = request.getHeader("User-Agent");
         if (StringUtils.hasText(userAgentString)) {
-            log.debug("User agent: " + userAgentString);
+            if (log.isDebugEnabled()) {
+                log.debug("User agent: " + userAgentString);
+            }
 
             UserAgent agent = userAgentAnalyzer.parse(userAgentString);
             List<Tag> tags = configuration.getTags()
@@ -59,5 +67,11 @@ public class UserAgentMetricFilter extends OncePerRequestFilter {
                     .collect(toList());
             meterRegistry.counter(METRIC_NAME, tags).increment();
         }
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return excludePatterns.stream()
+                .anyMatch(pattern -> pattern.matcher(request.getRequestURI()).matches());
     }
 }

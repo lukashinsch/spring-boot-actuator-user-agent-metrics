@@ -25,6 +25,7 @@ import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -64,7 +65,7 @@ public class UserAgentMetricFilterTest {
 
     @Before
     public void initAnalyzer() {
-        filter.buildAnalyzer();
+        filter.initialize();
     }
 
     @Test
@@ -109,6 +110,23 @@ public class UserAgentMetricFilterTest {
         verify(filterChain).doFilter(request, response);
         verify(counter, never()).increment();
         verify(meterRegistry, never()).counter(anyString(), anyList());
+    }
+
+    @Test
+    public void shouldNotFilterWithExcludePattern() throws Exception {
+        // given
+        mockUserAgentHeader(CHROME);
+        mockTagConfiguration(List.of("AgentName", "OperatingSystemNameVersionMajor"));
+        when(request.getRequestURI()).thenReturn("/excluded-path");
+        when(configuration.getExcludePatterns()).thenReturn(List.of("/excluded.*"));
+        filter.initialize();
+
+        // when
+        filter.doFilter(request, response, filterChain);
+
+        // then
+        verify(filterChain).doFilter(request, response);
+        verifyNoMoreInteractions(meterRegistry);
     }
 
     private void mockTagConfiguration(List<String> config) {

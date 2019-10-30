@@ -32,8 +32,15 @@ public class UserAgentMetricFilterConfiguration {
 
     /**
      * List of url patterns to apply the servlet filter to.
+     * Format: ant style matcher.
      */
     private List<String> urlPatterns = new ArrayList<>();
+
+    /**
+     * List or url patterns to exclude from metrics collection.
+     * Format: regex.
+     */
+    private List<String> excludePatterns = new ArrayList<>();
 
     /**
      * List of fields that will be added as micrometer tags
