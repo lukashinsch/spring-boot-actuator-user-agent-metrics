@@ -15,7 +15,7 @@ Note: do not use version 0.2.0, while it was updated to work with current framew
 
 ### Gradle
 ```
-runtime("eu.hinsch:spring-boot-actuator-user-agent-metrics:0.3.1")
+runtime("eu.hinsch:spring-boot-actuator-user-agent-metrics:0.3.2")
 ```
 
 ### Maven
@@ -23,7 +23,7 @@ runtime("eu.hinsch:spring-boot-actuator-user-agent-metrics:0.3.1")
 <dependency>
   <groupId>eu.hinsch</groupId>
   <artifactId>spring-boot-actuator-user-agent-metrics</artifactId>
-  <version>0.3.1</version>
+  <version>0.3.2</version>
 </dependency>
 ```
 
@@ -31,11 +31,12 @@ runtime("eu.hinsch:spring-boot-actuator-user-agent-metrics:0.3.1")
 
 All config properties are located beneath the prefix `user-agent-metric`
 
-| Key          | Default    | Description                |
-|--------------|------------|----------------------------|
-| enabled      | false      | Turn metrics filter on/off | 
-| url-patterns | empty list | List of patterns to match the servlet filter on |
-| tags         | empty list | list of fields to be added as micrometer tags. For a list of available fields see [https://github.com/nielsbasjes/yauaa/blob/master/analyzer/src/main/java/nl/basjes/parse/useragent/UserAgent.java](https://github.com/nielsbasjes/yauaa/blob/master/analyzer/src/main/java/nl/basjes/parse/useragent/UserAgent.java) |
+| Key              | Default    | Description                |
+|------------------|------------|----------------------------|
+| enabled          | false      | Turn metrics filter on/off | 
+| url-patterns     | empty list | List of patterns (ant style) to match the servlet filter on |
+| exclude-patterns | empty list | List of patterns (regex) to match against the request URI to exclude the request from metrics collection |
+| tags             | empty list | list of fields to be added as micrometer tags. For a list of available fields see [https://github.com/nielsbasjes/yauaa/blob/master/analyzer/src/main/java/nl/basjes/parse/useragent/UserAgent.java](https://github.com/nielsbasjes/yauaa/blob/master/analyzer/src/main/java/nl/basjes/parse/useragent/UserAgent.java) |
 
 For an example see [SpringBootActuatorUserAgentMetricsTestApplication](https://github.com/lukashinsch/spring-boot-actuator-user-agent-metrics/blob/master/src/test/java/eu/hinsch/spring/boot/actuator/useragent/SpringBootActuatorUserAgentMetricsTestApplication.java)
 and [application.yml](https://github.com/lukashinsch/spring-boot-actuator-user-agent-metrics/blob/master/src/test/resources/application.yml)
