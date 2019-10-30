@@ -21,9 +21,15 @@ public class SpringBootActuatorUserAgentMetricsTestApplication {
         return new ConcurrentMapCacheManager("user-agent-parser");
     }
 
-    @RequestMapping("/test")
+    @RequestMapping("/test/included")
     @ResponseBody
     public String test() {
+        return "ok";
+    }
+
+    @RequestMapping("/test/excluded")
+    @ResponseBody
+    public String excluded() {
         return "ok";
     }
 
